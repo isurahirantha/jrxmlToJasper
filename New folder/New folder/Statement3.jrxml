@@ -1,0 +1,831 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Statement" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b823c127-eef7-4259-b522-f94e2781d969">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="50"/>
+	<parameter name="CardNo" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="OpenBalance" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ClosingBalance" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="MinPayment" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PaymentAndCredit" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CreditLimit" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AccountNo" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CustomerName" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["reports//"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="TotalDebitsWithFee" class="java.lang.Double"/>
+	<parameter name="startIndex" class="java.lang.Integer"/>
+	<parameter name="endIndex" class="java.lang.Integer"/>
+	<parameter name="triggerMsg" class="java.lang.String"/>
+	<parameter name="ConsideredAccountTypes" class="java.lang.String"/>
+	<parameter name="pattern" class="java.lang.String"/>
+	<parameter name="EODDate" class="java.lang.String"/>
+	<parameter name="TotalInterest" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[0.00]]></defaultValueExpression>
+	</parameter>
+	<parameter name="TotalFee" class="java.lang.Double">
+		<defaultValueExpression><![CDATA[0.00]]></defaultValueExpression>
+	</parameter>
+	<parameter name="subreport_location" class="java.lang.String"/>
+	<parameter name="billAdd2" class="java.lang.String"/>
+	<parameter name="billAdd1" class="java.lang.String"/>
+	<parameter name="nameOnStatement" class="java.lang.String"/>
+	<parameter name="txnAdjestmentDr" class="java.lang.String"/>
+	<parameter name="txnAdjestmentCr" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="txnPayment" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="billAdd3" class="java.lang.String"/>
+	<parameter name="txnReversal" class="java.lang.String"/>
+	<parameter name="txnEasyReversal" class="java.lang.String"/>
+	<parameter name="feeCashAdType" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ClosingBalanceForDisplay" class="java.lang.Double"/>
+	<parameter name="OpenBalanceForDisplay" class="java.lang.Double"/>
+	<parameter name="endDate" class="java.lang.String"/>
+	<parameter name="latePaymentFee" class="java.lang.String"/>
+	<parameter name="can" class="java.lang.String">
+		<defaultValueExpression><![CDATA[$P{can}]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select * from (
+SELECT 
+  CARDNUMBER, 
+  TRANSACTIONAMOUNT,
+  SETTLEMENTDATE,
+  TRANSACTIONDATE,
+  TRANSACTIONTYPE,
+  TRANSACTIONDESCRIPTION,
+  CARDCATEGORYCODE,
+  CASHADVANCEFEE,
+   eodid,crdr,
+ACCOUNTNO
+
+FROM
+
+(SELECT CAC.CARDNUMBER AS CARDNUMBER, NVL(ET.TRANSACTIONAMOUNT,'')AS TRANSACTIONAMOUNT,
+  NVL(ET.SETTLEMENTDATE,'')AS SETTLEMENTDATE,
+  NVL(ET.TRANSACTIONDATE,'')AS TRANSACTIONDATE,
+  NVL(ET.TRANSACTIONTYPE,'')AS TRANSACTIONTYPE,
+  NVL(ET.TRANSACTIONDESCRIPTION,'')AS TRANSACTIONDESCRIPTION,
+  (SELECT CA.CARDCATEGORYCODE  FROM CARD CA WHERE CA.CARDNUMBER = CAC.CARDNUMBER) AS CARDCATEGORYCODE,
+  
+   NVL((select FEEAMOUNT from EODCARDFEE where STATUS='EDON' and FEETYPE=$P{feeCashAdType}
+   and CARDNUMBER = cac.cardnumber and TRANSACTIONID = et.TRANSACTIONID),0.00) as CASHADVANCEFEE,
+   et.eodid AS eodid,et.crdr AS crdr,
+CAC.ACCOUNTNO AS ACCOUNTNO
+FROM CARDACCOUNTCUSTOMER CAC
+FULL OUTER JOIN   EODTRANSACTION ET ON
+ET.ACCOUNTNO = CAC.ACCOUNTNO and et.cardnumber=cac.cardnumber and
+ET.SETTLEMENTDATE >to_date($P{endDate},'YY-MM-DD')
+and ET.ADJUSTMENTSTATUS IN ('NO') and ET.STATUS IN('EDON','CQRT')
+right join  CARD CA on
+  cac.cardnumber=ca.cardnumber
+  where
+  CAC.ACCOUNTNO =$P{AccountNo})
+  UNION ALL 
+  (SELECT CAC.CARDNUMBER AS CARDNUMBER, NVL(ET.TRANSACTIONAMOUNT,'')AS TRANSACTIONAMOUNT,
+  NVL(ET.SETTLEMENTDATE,'')AS SETTLEMENTDATE,
+  NVL(ET.TRANSACTIONDATE,'')AS TRANSACTIONDATE,
+  NVL(ET.TRANSACTIONTYPE,'')AS TRANSACTIONTYPE,
+  NVL(ET.TRANSACTIONDESCRIPTION,'')AS TRANSACTIONDESCRIPTION,
+  (SELECT CA.CARDCATEGORYCODE  FROM CARD CA WHERE CA.CARDNUMBER = CAC.CARDNUMBER) AS CARDCATEGORYCODE,
+  
+   NVL((select FEEAMOUNT from EODCARDFEE where STATUS='EDON' and FEETYPE=$P{feeCashAdType}
+   and CARDNUMBER = cac.cardnumber and TRANSACTIONID = et.TRANSACTIONID),0.00) as CASHADVANCEFEE,
+   et.eodid AS eodid,et.crdr AS crdr,
+CAC.ACCOUNTNO AS ACCOUNTNO
+FROM CARDACCOUNTCUSTOMER CAC
+FULL OUTER JOIN   EODTRANSACTION ET ON
+ET.ACCOUNTNO = CAC.ACCOUNTNO and et.cardnumber=cac.cardnumber and
+ET.SETTLEMENTDATE >to_date($P{endDate},'YY-MM-DD')
+and ET.ADJUSTMENTSTATUS IN ('TTC028') and ET.STATUS IN('EDON','CQRT') 
+right join EODCARDFEE EF on ET.TRANSACTIONID=EF.TRANSACTIONID
+right join  CARD CA on
+  cac.cardnumber=ca.cardnumber
+  where
+  CAC.ACCOUNTNO =$P{AccountNo}
+  AND EF.STATUS='EDON' AND EF.FEETYPE=$P{feeCashAdType})
+  )  
+  ORDER BY
+CASE
+  WHEN CARDCATEGORYCODE = 'M' OR CARDCATEGORYCODE = 'A' OR CARDCATEGORYCODE = 'CO'
+  THEN 1
+  WHEN CARDCATEGORYCODE = 'S' OR CARDCATEGORYCODE = 'AS' OR  CARDCATEGORYCODE = 'COS' OR CARDCATEGORYCODE = 'FS'
+  THEN 2
+  WHEN CARDCATEGORYCODE = 'E'
+  THEN 3
+  WHEN CARDCATEGORYCODE = 'C'
+  THEN 4
+  ELSE 5
+END,
+CARDNUMBER,SETTLEMENTDATE,TRANSACTIONDATE]]>
+	</queryString>
+	<field name="CARDNUMBER" class="java.lang.String"/>
+	<field name="TRANSACTIONAMOUNT" class="java.math.BigDecimal"/>
+	<field name="SETTLEMENTDATE" class="java.sql.Timestamp"/>
+	<field name="TRANSACTIONDATE" class="java.sql.Timestamp"/>
+	<field name="TRANSACTIONTYPE" class="java.lang.String"/>
+	<field name="TRANSACTIONDESCRIPTION" class="java.lang.String"/>
+	<field name="CARDCATEGORYCODE" class="java.lang.String"/>
+	<field name="CASHADVANCEFEE" class="java.math.BigDecimal"/>
+	<field name="EODID" class="java.math.BigDecimal"/>
+	<field name="CRDR" class="java.lang.String"/>
+	<field name="ACCOUNTNO" class="java.lang.String"/>
+	<variable name="total card debits" class="java.lang.Double" resetType="Group" resetGroup="Card" calculation="Sum">
+		<variableExpression><![CDATA[((!$F{TRANSACTIONTYPE}.equals($P{txnAdjestmentCr})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnReversal}) ) ? (( !$F{TRANSACTIONTYPE}.equals($P{txnPayment})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnEasyReversal} )) ? ($F{TRANSACTIONAMOUNT}.add($F{CASHADVANCEFEE})) : 0 ) :0) :0):0)]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="txnType" class="java.lang.String" resetType="Column">
+		<variableExpression><![CDATA[$F{TRANSACTIONTYPE}]]></variableExpression>
+	</variable>
+	<variable name="account debits" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[((!$F{TRANSACTIONTYPE}.equals($P{txnAdjestmentCr})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnReversal}) ) ? (( !$F{TRANSACTIONTYPE}.equals($P{txnPayment})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnEasyReversal} )) ? $F{TRANSACTIONAMOUNT}.add($F{CASHADVANCEFEE}) : 0 ) :0) :0):0)]]></variableExpression>
+	</variable>
+	<variable name="payments" class="java.lang.Double" resetType="Group" resetGroup="Card" calculation="Sum">
+		<variableExpression><![CDATA[(($F{TRANSACTIONTYPE}.equals($P{txnPayment})) ? $F{TRANSACTIONAMOUNT} : 0)]]></variableExpression>
+	</variable>
+	<variable name="TotalFee1" class="java.lang.Double"/>
+	<variable name="account credits" class="java.lang.Double" calculation="Sum">
+		<variableExpression><![CDATA[((!$F{TRANSACTIONTYPE}.equals($P{txnAdjestmentCr})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnReversal}) ) ? (( !$F{TRANSACTIONTYPE}.equals($P{txnPayment})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnEasyReversal}))? 0 :$F{TRANSACTIONAMOUNT}) : $F{TRANSACTIONAMOUNT} ) :$F{TRANSACTIONAMOUNT}) :$F{TRANSACTIONAMOUNT})]]></variableExpression>
+	</variable>
+	<variable name="TotalDebitsWithFee" class="java.lang.Double" resetType="None" calculation="System"/>
+	<variable name="total card credits" class="java.lang.Double" resetType="Group" resetGroup="Card" calculation="Sum">
+		<variableExpression><![CDATA[((!$F{TRANSACTIONTYPE}.equals($P{txnAdjestmentCr})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnReversal}) ) ? (( !$F{TRANSACTIONTYPE}.equals($P{txnPayment})) ? ((!$F{TRANSACTIONTYPE}.equals($P{txnEasyReversal}))? 0 :$F{TRANSACTIONAMOUNT}) : $F{TRANSACTIONAMOUNT} ) :$F{TRANSACTIONAMOUNT}) :$F{TRANSACTIONAMOUNT})]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<variable name="closingBalCRDR" class="java.lang.String">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="total_refunds" class="java.lang.Double" resetType="Group" resetGroup="Card" calculation="Sum">
+		<variableExpression><![CDATA[$F{TRANSACTIONTYPE}.equals("TTC041") ? $F{TRANSACTIONAMOUNT} : 0.0]]></variableExpression>
+		<initialValueExpression><![CDATA[0.00]]></initialValueExpression>
+	</variable>
+	<group name="Acoount">
+		<groupExpression><![CDATA[$F{ACCOUNTNO}]]></groupExpression>
+		<groupFooter>
+			<band height="40">
+				<elementGroup/>
+				<textField>
+					<reportElement x="0" y="23" width="552" height="15" forecolor="#FF0033" uuid="dee804d9-4686-4c0b-9e97-487c0bb66e78"/>
+					<textElement textAlignment="Center" verticalAlignment="Bottom" markup="none">
+						<font isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{triggerMsg}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="164" y="3" width="158" height="20" uuid="a289633d-3472-4415-afe6-b8cdf68ed882"/>
+					<textElement>
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[TOTAL - DEBITS]]></text>
+				</staticText>
+				<textField evaluationTime="Report" pattern="#,##0.00">
+					<reportElement x="448" y="3" width="87" height="20" uuid="a1cdf542-3e86-4ed1-a100-a21486b525c7"/>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="10" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{TotalDebitsWithFee}]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="100">
+				<staticText>
+					<reportElement x="0" y="11" width="100" height="15" uuid="65ad074b-9cf7-40cf-a965-d1e78fccc717"/>
+					<textElement>
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Cardholder Name]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="0" y="51" width="100" height="15" uuid="2bd90f4f-054a-4fea-90d7-0abcc389dc10"/>
+					<textElement>
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Card Number]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="439" y="11" width="96" height="15" uuid="e81bc2dd-9388-4a57-8070-3d17e227ed8b"/>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Total Outstanding]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="437" y="52" width="98" height="15" uuid="bb2b4300-470b-43fd-8773-a94de6268daa"/>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Credit Limit]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="0" y="65" width="100" height="15" uuid="bf2ae7df-f86c-46dc-acda-9900aa605847"/>
+					<textElement>
+						<font fontName="SansSerif" size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{CardNo}.substring(0, $P{startIndex}) + $P{pattern} + $P{CardNo}.substring($P{endIndex}, $P{CardNo}.length())]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00;(#,##0.00)">
+					<reportElement x="439" y="25" width="96" height="15" uuid="1f7fddfc-5013-413c-a292-c306be29972e"/>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? $P{ClosingBalance}*(-1) : $P{ClosingBalance}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" pattern="#,##0.00">
+					<reportElement x="437" y="66" width="98" height="15" uuid="3f346444-b719-4b13-a3ea-a69d43e17b7a"/>
+					<textElement textAlignment="Right">
+						<font fontName="SansSerif" size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{CreditLimit}]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="2" width="553" height="1" uuid="925c5fdc-3783-4b7d-9a31-665b3d5eada2"/>
+					<graphicElement>
+						<pen lineWidth="1.75"/>
+					</graphicElement>
+				</line>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="0" y="25" width="139" height="15" uuid="abb99572-bafd-40c5-96bc-934dd30b3e52"/>
+					<textElement>
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{nameOnStatement}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="535" y="25" width="17" height="15" isRemoveLineWhenBlank="true" uuid="3ed788ea-5750-4e10-a86a-58ce9ecdf187"/>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? " CR" : " "]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<group name="Card" minHeightToStartNewPage="2">
+		<groupExpression><![CDATA[$F{CARDNUMBER}]]></groupExpression>
+		<groupHeader>
+			<band height="4" splitType="Immediate"/>
+		</groupHeader>
+		<groupFooter>
+			<band height="30" splitType="Immediate">
+				<textField pattern="" isBlankWhenNull="true">
+					<reportElement x="138" y="0" width="100" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" uuid="6aa68948-7e3b-42fa-b070-fdb449286940">
+						<printWhenExpression><![CDATA[$V{total card debits}>0.00]]></printWhenExpression>
+					</reportElement>
+					<textElement>
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{CARDNUMBER}.substring(0, $P{startIndex}) + $P{pattern} + $F{CARDNUMBER}.substring($P{endIndex}, $F{CARDNUMBER}.length())]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="239" y="0" width="61" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" uuid="8dbf4916-865b-4361-9afd-d4473559970d">
+						<printWhenExpression><![CDATA[$V{total card debits}>0.00]]></printWhenExpression>
+					</reportElement>
+					<textElement>
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[ SUB TOTAL]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="339" y="0" width="98" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" uuid="b09d159a-b084-428d-a2ed-12c8ad40eaff">
+						<printWhenExpression><![CDATA[$V{total card debits}>0.00]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Center">
+						<font fontName="SansSerif" size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[-DEBITS]]></text>
+				</staticText>
+				<subreport>
+					<reportElement mode="Opaque" x="0" y="16" width="551" height="14" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" printWhenGroupChanges="Card" uuid="dc54e93b-0f24-47d0-bb79-7a80b9242677"/>
+					<subreportParameter name="TotalFee">
+						<subreportParameterExpression><![CDATA[$P{TotalFee}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd1">
+						<subreportParameterExpression><![CDATA[$P{billAdd1}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="startIndex">
+						<subreportParameterExpression><![CDATA[$P{startIndex}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="TotalDebitsWithFee">
+						<subreportParameterExpression><![CDATA[$P{TotalDebitsWithFee}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnPayment">
+						<subreportParameterExpression><![CDATA[$P{txnPayment}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="ConsideredAccountTypes">
+						<subreportParameterExpression><![CDATA[$P{ConsideredAccountTypes}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnEasyReversal">
+						<subreportParameterExpression><![CDATA[$P{txnEasyReversal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="nameOnStatement">
+						<subreportParameterExpression><![CDATA[$P{nameOnStatement}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="triggerMsg">
+						<subreportParameterExpression><![CDATA[$P{triggerMsg}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="OpenBalance">
+						<subreportParameterExpression><![CDATA[$P{OpenBalance}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="endIndex">
+						<subreportParameterExpression><![CDATA[$P{endIndex}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CustomerName">
+						<subreportParameterExpression><![CDATA[$P{CustomerName}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd3">
+						<subreportParameterExpression><![CDATA[$P{billAdd3}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd2">
+						<subreportParameterExpression><![CDATA[$P{billAdd2}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CardNo">
+						<subreportParameterExpression><![CDATA[$F{CARDNUMBER}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="ClosingBalance">
+						<subreportParameterExpression><![CDATA[$P{ClosingBalance}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="subreport_location">
+						<subreportParameterExpression><![CDATA[$P{subreport_location}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="feeCashAdType">
+						<subreportParameterExpression><![CDATA[$P{feeCashAdType}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="PaymentAndCredit">
+						<subreportParameterExpression><![CDATA[$P{PaymentAndCredit}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnAdjestmentDr">
+						<subreportParameterExpression><![CDATA[$P{txnAdjestmentDr}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="pattern">
+						<subreportParameterExpression><![CDATA[$P{pattern}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="latePayment">
+						<subreportParameterExpression><![CDATA[$P{latePaymentFee}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnAdjestmentCr">
+						<subreportParameterExpression><![CDATA[$P{txnAdjestmentCr}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="AccountNo">
+						<subreportParameterExpression><![CDATA[$P{AccountNo}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="TotalInterest">
+						<subreportParameterExpression><![CDATA[$P{TotalInterest}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnReversal">
+						<subreportParameterExpression><![CDATA[$P{txnReversal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CreditLimit">
+						<subreportParameterExpression><![CDATA[$P{CreditLimit}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<returnValue subreportVariable="TotalFee1" toVariable="TotalFee1"/>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} +"/Statement3_subreport2.jasper"]]></subreportExpression>
+				</subreport>
+				<textField pattern="#,##0.00" isBlankWhenNull="true">
+					<reportElement x="435" y="0" width="100" height="12" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" uuid="34100b99-97a4-4a80-ad22-3e20b4d62328">
+						<printWhenExpression><![CDATA[$V{total card debits}>0.00 || $V{total_refunds} > 0.00]]></printWhenExpression>
+					</reportElement>
+					<textElement textAlignment="Right">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{total card debits}==null ? 0.00 : ($V{total card debits}  - $V{total_refunds})]]></textFieldExpression>
+				</textField>
+			</band>
+			<band height="20" splitType="Immediate">
+				<subreport>
+					<reportElement positionType="Float" stretchType="RelativeToBandHeight" x="0" y="0" width="551" height="20" isRemoveLineWhenBlank="true" printWhenGroupChanges="Card" uuid="4684266b-e011-4085-b368-5a0294bd382e"/>
+					<subreportParameter name="TotalFee">
+						<subreportParameterExpression><![CDATA[$P{TotalFee}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="OpenBalance">
+						<subreportParameterExpression><![CDATA[$P{OpenBalance}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="triggerMsg">
+						<subreportParameterExpression><![CDATA[$P{triggerMsg}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="endIndex">
+						<subreportParameterExpression><![CDATA[$P{endIndex}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="subreport_location">
+						<subreportParameterExpression><![CDATA[$P{subreport_location}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="ClosingBalance">
+						<subreportParameterExpression><![CDATA[$P{ClosingBalance}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CardNo">
+						<subreportParameterExpression><![CDATA[$F{CARDNUMBER}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="PaymentAndCredit">
+						<subreportParameterExpression><![CDATA[$P{PaymentAndCredit}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnAdjestmentCr">
+						<subreportParameterExpression><![CDATA[$P{txnAdjestmentCr}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="AccountNo">
+						<subreportParameterExpression><![CDATA[$P{AccountNo}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd1">
+						<subreportParameterExpression><![CDATA[$P{billAdd1}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnPayment">
+						<subreportParameterExpression><![CDATA[$P{txnPayment}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="TotalDebitsWithFee">
+						<subreportParameterExpression><![CDATA[$P{TotalDebitsWithFee}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="startIndex">
+						<subreportParameterExpression><![CDATA[$P{startIndex}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnEasyReversal">
+						<subreportParameterExpression><![CDATA[$P{txnEasyReversal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="ConsideredAccountTypes">
+						<subreportParameterExpression><![CDATA[$P{ConsideredAccountTypes}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="nameOnStatement">
+						<subreportParameterExpression><![CDATA[$P{nameOnStatement}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CustomerName">
+						<subreportParameterExpression><![CDATA[$P{CustomerName}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd3">
+						<subreportParameterExpression><![CDATA[$P{billAdd3}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="billAdd2">
+						<subreportParameterExpression><![CDATA[$P{billAdd2}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="SUBREPORT_DIR">
+						<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="feeCashAdType">
+						<subreportParameterExpression><![CDATA[$P{feeCashAdType}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnAdjestmentDr">
+						<subreportParameterExpression><![CDATA[$P{txnAdjestmentDr}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="pattern">
+						<subreportParameterExpression><![CDATA[$P{pattern}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="TotalInterest">
+						<subreportParameterExpression><![CDATA[$P{TotalInterest}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="txnReversal">
+						<subreportParameterExpression><![CDATA[$P{txnReversal}]]></subreportParameterExpression>
+					</subreportParameter>
+					<subreportParameter name="CreditLimit">
+						<subreportParameterExpression><![CDATA[$P{CreditLimit}]]></subreportParameterExpression>
+					</subreportParameter>
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<subreportExpression><![CDATA[$P{SUBREPORT_DIR} +"/Statement3_subreport1.jasper"]]></subreportExpression>
+				</subreport>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="161" splitType="Stretch">
+			<staticText>
+				<reportElement x="137" y="82" width="100" height="15" uuid="2771720c-e2c4-4d37-8da3-dbba1e320203"/>
+				<textElement>
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Card Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="309" y="81" width="109" height="15" uuid="95100427-3642-4b99-b04b-8e4208a9ade7"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Total Outstanding]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="456" y="81" width="79" height="15" uuid="ca0500c4-3926-443c-9ef8-cf2824f8ee53"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Credit Limit]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="113" width="555" height="1" uuid="b26bfb72-2485-4682-828c-8288b4d6ec32"/>
+				<graphicElement>
+					<pen lineWidth="1.75"/>
+				</graphicElement>
+			</line>
+			<textField pattern="#,##0.00">
+				<reportElement x="456" y="96" width="79" height="15" uuid="88cf3742-2e76-46da-b7db-fce130289290"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{CreditLimit}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="132" width="46" height="17" uuid="4f074bb0-3c25-44a9-b897-508f9abbb4cf"/>
+				<textElement textAlignment="Left">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="45" y="132" width="15" height="17" uuid="d082766a-c5a4-4d0a-9c98-9a1cf7263e7a"/>
+				<textElement>
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="352" y="117" width="83" height="17" uuid="c5835905-6da6-45de-9a5c-779949be96c0"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Credits]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="453" y="116" width="82" height="16" uuid="998e20e1-6922-4971-ad5c-dd1e97228749"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Total Outstanding]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="155" width="553" height="1" uuid="a1ab2801-e37d-4ae1-9cc7-ab3eaf1ff6ce"/>
+				<graphicElement>
+					<pen lineWidth="1.75"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement x="0" y="77" width="553" height="1" uuid="753d5a23-7b8d-4608-8234-23e898976808"/>
+				<graphicElement>
+					<pen lineWidth="1.75"/>
+				</graphicElement>
+			</line>
+			<textField pattern="#,##0.00;#,##0.00">
+				<reportElement x="309" y="96" width="93" height="15" uuid="94c5413b-0c0d-424c-9e5c-91df5117f7c3"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? $P{ClosingBalance}*(-1) : $P{ClosingBalance}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="137" y="96" width="100" height="15" uuid="1aafd88d-6c8e-4791-b27a-c30390d838a3"/>
+				<textElement>
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{CardNo}.substring(0, $P{startIndex}) + $P{pattern} + $P{CardNo}.substring($P{endIndex}, $P{CardNo}.length())]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="108" y="117" width="100" height="17" uuid="0f6a3a55-744f-4009-b4e7-f63830a242dd"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Opening Balance]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="237" y="117" width="99" height="17" uuid="792b7c11-be4d-4a75-b32e-294234a94cd9"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Debits]]></text>
+			</staticText>
+			<textField evaluationTime="Report" pattern="#,##0.00">
+				<reportElement x="238" y="133" width="100" height="16" uuid="643b442b-c6e5-4797-b178-7c607222e25a"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{TotalDebitsWithFee}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="-1" y="116" width="100" height="17" uuid="079ea8ee-23b6-46c6-9afe-6d0fe9f4dc6e"/>
+				<textElement>
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Page Number]]></text>
+			</staticText>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="198" height="15" isRemoveLineWhenBlank="true" uuid="105063b1-45c1-4a53-8c1e-996f1f15f522"/>
+				<textElement>
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{nameOnStatement}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="19" width="198" height="12" isRemoveLineWhenBlank="true" uuid="32191146-0c03-4052-9f02-b994b65261db"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{billAdd1}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="30" width="200" height="12" isRemoveLineWhenBlank="true" uuid="44493f9f-db3b-42db-9556-f52b44bdb086"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{billAdd2}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="41" width="200" height="12" isRemoveLineWhenBlank="true" uuid="0ecde87f-778d-462b-a13e-ee3278b22112"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{billAdd3}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="535" y="133" width="21" height="15" isRemoveLineWhenBlank="true" uuid="5324fd21-9c7c-4ad2-9a91-fd48a4519296"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? " CR" : " "]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="402" y="96" width="16" height="15" isRemoveLineWhenBlank="true" uuid="f99cd0b3-7f5f-4d68-a499-307971a59163"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? " CR" : " "]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="174" y="134" width="14" height="14" isRemoveLineWhenBlank="true" uuid="30ad9eb9-7996-4324-844b-e2adc3a9c1c6"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{OpenBalance}<0 ? " CR" : " "]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00;#,##0.00">
+				<reportElement x="457" y="133" width="78" height="15" uuid="80bec7de-8135-4610-a4fb-2728cf174cbe"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ClosingBalance}<0 ? $P{ClosingBalance}*(-1) : $P{ClosingBalance}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0.00;#,##0.00" isBlankWhenNull="true">
+				<reportElement x="117" y="134" width="57" height="14" uuid="c08af6e8-d2e9-4bbb-a264-6a4fd3442820"/>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{OpenBalance}<0 ? $P{OpenBalance}*(-1) : $P{OpenBalance}*(1.00)]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00;(-#,##0.00)">
+				<reportElement x="371" y="132" width="51" height="16" uuid="2f222ec2-2d59-4a9c-a93e-0587725fd1bb"/>
+				<textElement textAlignment="Center">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{PaymentAndCredit}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="8" y="82" width="100" height="15" uuid="a1899b80-16bd-476a-b11a-df510fdd4e4d"/>
+				<textElement>
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Card Account Number]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="8" y="96" width="100" height="15" uuid="cf083db3-c9e8-48c2-a9ec-3b682ac368c3"/>
+				<textElement>
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{can}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="29" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="5" width="62" height="20" uuid="a90feaa9-689e-426b-831a-d35268b0830d"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Billed Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="164" y="5" width="219" height="20" uuid="117517d9-504c-41cc-a29b-4f68463ca063"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Transaction Description]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="25" width="553" height="1" uuid="a879e094-4061-45bd-8d2a-25ec8231b27c"/>
+				<graphicElement>
+					<pen lineWidth="1.75"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement x="62" y="5" width="55" height="20" uuid="039b34d5-ba99-437a-8e19-cb6ca84480fb"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Txn Date]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="421" y="5" width="114" height="20" uuid="b01069ed-10a7-40d0-b96a-fde1d338e754"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Transaction Amount]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="33" splitType="Immediate">
+			<printWhenExpression><![CDATA[( $F{CASHADVANCEFEE}.doubleValue() > 0.00) || ($F{TRANSACTIONAMOUNT} != null)]]></printWhenExpression>
+			<textField isBlankWhenNull="true">
+				<reportElement x="63" y="0" width="54" height="16" uuid="e7070c07-df08-499c-a241-60407f8eb757"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(new SimpleDateFormat("dd/MM")).format($F{TRANSACTIONDATE})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="139" y="0" width="264" height="16" uuid="713f0078-9df8-4beb-bac9-547bfd1c31e6"/>
+				<textElement>
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{TRANSACTIONDESCRIPTION}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="440" y="0" width="95" height="16" uuid="9c9c0769-6937-4284-abc1-a6576efc1880"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{TRANSACTIONAMOUNT}.doubleValue()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="62" height="16" uuid="a1e75fc6-235e-45f1-badf-b0e321cc4dd4"/>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(new SimpleDateFormat("dd/MM")).format($F{SETTLEMENTDATE})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="534" y="0" width="20" height="16" isRemoveLineWhenBlank="true" uuid="953a17dc-94af-4273-977b-3c9d8e8098af"/>
+				<textElement textAlignment="Right">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CRDR}.equals("CR")?"CR":" "]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="16" width="62" height="16" isRemoveLineWhenBlank="true" uuid="8a102305-676e-469d-b50b-0dbf7b506658">
+					<printWhenExpression><![CDATA[$F{CASHADVANCEFEE}.doubleValue()>0.00]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(new SimpleDateFormat("dd/MM")).format($F{SETTLEMENTDATE})]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="63" y="16" width="54" height="16" isRemoveLineWhenBlank="true" uuid="155cc78d-1146-476a-91e3-6ad0cd7a7dd2">
+					<printWhenExpression><![CDATA[$F{CASHADVANCEFEE}.doubleValue()>0.00]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[(new SimpleDateFormat("dd/MM")).format($F{TRANSACTIONDATE})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="139" y="16" width="174" height="17" isRemoveLineWhenBlank="true" uuid="3e7181e8-4e3f-499a-b45f-790644dfcb15">
+					<printWhenExpression><![CDATA[$F{CASHADVANCEFEE}.doubleValue()>0.00]]></printWhenExpression>
+				</reportElement>
+				<textElement>
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[CASH ADVANCE FEE]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement x="441" y="15" width="94" height="16" isRemoveLineWhenBlank="true" uuid="ef1fe763-d9ad-423f-b645-4b90e768b48b">
+					<printWhenExpression><![CDATA[$F{CASHADVANCEFEE}.doubleValue()>0.00]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CASHADVANCEFEE}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>
